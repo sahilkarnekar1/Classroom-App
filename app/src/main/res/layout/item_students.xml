@@ -5,6 +5,7 @@
     android:orientation="horizontal"
     android:layout_height="wrap_content"
     android:layout_margin="10dp"
+    android:id="@+id/studentViewLayout"
     android:background="@drawable/border"
     android:padding="8dp">
 
@@ -24,6 +25,19 @@
         android:layout_marginLeft="10dp"
         android:layout_weight="1"
         />
+
+    <TextView
+        android:id="@+id/attendancePercentageTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:text=""
+        android:layout_marginLeft="5dp"
+        />
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/cBox"/>
 
 
 </LinearLayout>

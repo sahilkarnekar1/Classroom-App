@@ -24,5 +24,14 @@
         android:clickable="true"
         android:onClick="onJoinClassClick"
          />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AI Assistant"
+        android:textSize="16sp"
+        android:padding="8dp"
+        android:clickable="true"
+        android:onClick="onAiAssistantClick"
+        />
 
 </LinearLayout>

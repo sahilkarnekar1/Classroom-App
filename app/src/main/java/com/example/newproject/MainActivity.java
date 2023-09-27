@@ -101,6 +101,11 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, JoinClassActivity.class);
         startActivity(intent);
     }
+    public void onAiAssistantClick(View view) {
+        // Handle the click event here, e.g., show a dialog for entering the class code
+        Intent intent = new Intent(this, AssistantActivity.class);
+        startActivity(intent);
+    }
 
     private void fetchEnrolledClasses(String userId) {
         dialog=new ProgressDialog(MainActivity.this);
