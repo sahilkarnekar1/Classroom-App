@@ -14,7 +14,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class OpenAIUtil {
-    private static final String OPENAI_API_KEY = "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";
+    private static final String OPENAI_API_KEY = "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";
     private static final String OPENAI_API_URL = "https://api.openai.com/v1/engines/text-davinci-003/completions";
 
     public static String getChatGptResponse(String userMessage) throws IOException, JSONException {
