@@ -17,10 +17,16 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -39,6 +45,10 @@ public class AssistantActivity extends AppCompatActivity {
     // Constants for voice input
     private static final int REQ_CODE_SPEECH_INPUT = 100;
 
+    String url = "https://api.openai.com/v1/chat/completions";
+    String apiKey = "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";
+    String model = "gpt-3.5-turbo";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,100 +56,72 @@ public class AssistantActivity extends AppCompatActivity {
         txtResponse = findViewById(R.id.textViewResponse);
         btnMic = findViewById(R.id.buttonMic);
         etQestion = findViewById(R.id.editTextQuestion);
-        btnAsk=findViewById(R.id.buttonAsk);
+        btnAsk = findViewById(R.id.buttonAsk);
 
-        textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+        btnAsk.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onInit(int status) {
-                if (status != TextToSpeech.ERROR) {
-                    textToSpeech.setLanguage(Locale.UK);
-                }
+            public void onClick(View v) {
+                String mess = etQestion.getText().toString();
+                new AsyncTask<String, Void, String>() {
+                    @Override
+                    protected String doInBackground(String... strings) {
+                        try {
+                            URL obj = new URL(url);
+                            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+                            con.setRequestMethod("POST");
+                            con.setRequestProperty("Authorization", "Bearer " + apiKey);
+                            con.setRequestProperty("Content-Type", "application/json");
+
+                            String body = "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\": \"" + mess + "\"}]}";
+                            con.setDoOutput(true);
+                            OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
+                            writer.write(body);
+                            writer.flush();
+                            writer.close();
+
+                            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                            String inputLine;
+                            StringBuilder response = new StringBuilder();
+                            while ((inputLine = in.readLine()) != null) {
+                                response.append(inputLine);
+                            }
+                            in.close();
+
+                            return response.toString();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return null;
+                        }
+                    }
+
+                    @Override
+                    protected void onPostExecute(String response) {
+                        super.onPostExecute(response);
+                        if (response != null) {
+                            try {
+                                JSONObject jsonResponse = new JSONObject(response);
+                                JSONArray choicesArray = jsonResponse.getJSONArray("choices");
+                                if (choicesArray.length() > 0) {
+                                    JSONObject firstChoice = choicesArray.getJSONObject(0);
+                                    JSONObject messageObject = firstChoice.getJSONObject("message");
+                                    String assistantResponse = messageObject.getString("content");
+                                    txtResponse.setText(assistantResponse);
+                                } else {
+                                    Toast.makeText(AssistantActivity.this, "No response from the assistant", Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                                Toast.makeText(AssistantActivity.this, "Error parsing response", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(AssistantActivity.this, "Error occurred", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                }.execute();
             }
         });
 
-        btnMic.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Start voice recognition when the microphone button is clicked
-                startVoiceRecognition();
-            }
-        });
-
-       btnAsk.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String Qes = etQestion.getText().toString();
-                new GenerateResponseTask().execute(Qes);
-            }
-        });
+        // Other methods...
     }
-    // Method to start voice recognition
-    private void startVoiceRecognition() {
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-
-        try {
-            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(getApplicationContext(), "Speech recognition not supported on your device.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // Handle the results of voice recognition
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REQ_CODE_SPEECH_INPUT) {
-            if (resultCode == RESULT_OK && data != null) {
-                ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                if (result != null && !result.isEmpty()) {
-                    String userMessage = result.get(0);
-                    new GenerateResponseTask().execute(userMessage);
-                    etQestion.setText(userMessage);
-                }
-            }
-        }
-    }
-    private class GenerateResponseTask extends AsyncTask<String, Void, String> {
-
-        @Override
-        protected String doInBackground(String... strings) {
-            String userMessage = strings[0];
-            try {
-                return OpenAIUtil.getChatGptResponse(userMessage);
-            } catch (IOException | JSONException e) {
-                e.printStackTrace();
-                return "Error occurred: " + e.getMessage();
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            txtResponse.setText(result);
-
-
-            // Speak the response
-            String toSpeak = getFirstNWords(result, 50);
-            textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null);
-        }
-    }
-    @Override
-    public void onDestroy() {
-        if (textToSpeech != null) {
-            textToSpeech.stop();
-            textToSpeech.shutdown();
-        }
-        super.onDestroy();
-    }
-    private String getFirstNWords(String text, int n) {
-        String[] words = text.split("\\s+");
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < Math.min(n, words.length); i++) {
-            stringBuilder.append(words[i]).append(" ");
-        }
-        return stringBuilder.toString();
-    }
-
 }
