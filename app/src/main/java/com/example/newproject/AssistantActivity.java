@@ -48,7 +48,7 @@ public class AssistantActivity extends AppCompatActivity {
     Button btnAsk;
 
     String url = "https://api.openai.com/v1/chat/completions";
-    String apiKey = "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";
+    String apiKey = "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";
     String model = "gpt-3.5-turbo";
     String strOutput = "";
 
@@ -87,11 +87,16 @@ public class AssistantActivity extends AppCompatActivity {
                         try {
                             JSONArray choices = response.getJSONArray("choices");
                             if (choices.length() > 0) {
-                                String text = choices.getJSONObject(0).getString("message");
+                                JSONObject firstCo = choices.getJSONObject(0);
+                                      JSONObject message = firstCo.getJSONObject("message");
+                                      String text = message.getString("content");
                                 txtResponse.setText(text);
+                            }else{
+                                Toast.makeText(AssistantActivity.this, "Network error", Toast.LENGTH_SHORT).show();
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
+
                         }
                     }
                 }, new Response.ErrorListener() {
